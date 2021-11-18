@@ -1,0 +1,53 @@
+@app.route('/login',methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email=request.form['email']
+        plaintext_password=request.form['password']
+        logged_user = User.query.filter_by(email=email).first()
+
+        if logged_user:
+            pwhash=logged_user.password
+            if werkzeug.security.check_password_hash(pwhash=pwhash, password=plaintext_password):
+                login_user(logged_user)
+                flask.flash('Logged in successfully.')
+                return render_template('secrets.html', name=logged_user.name, logged_in=True)
+            else:
+                flash('Password Error Not authorised')
+                return render_template("login.html")
+        else:
+            flash('No user registered')
+            return render_template("login.html")
+
+    return render_template("login.html")
+
+
+    class BlogPost(db.Model):
+    __tablename__ = "blog_posts"
+    id = db.Column(db.Integer, primary_key=True)
+    author = relationship("User", back_populates="posts")
+    title = db.Column(db.String(250), unique=True, nullable=False)
+    subtitle = db.Column(db.String(250), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    img_url = db.Column(db.String(250), nullable=False)
+    author_id=db.Column(db.Integer,ForeignKey('user.id'))
+    comments = relationship("Comment", back_populates="parent_post")
+
+class User(UserMixin,db.Model):
+    __tablename__ = "user"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password=db.Column(db.String(120),nullable=False)
+    posts=relationship('BlogPost',back_populates="author")
+    comments=relationship('Comment',back_populates="comment_author")
+
+class Comment(db.Model):
+    __tablename__ = "comments"
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    comment_author = relationship("User", back_populates="comments")
+    post_id = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
+    parent_post = relationship("BlogPost", back_populates="comments")
+
